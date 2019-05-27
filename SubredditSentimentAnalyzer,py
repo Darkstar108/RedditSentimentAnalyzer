@@ -1,0 +1,62 @@
+import praw
+from textblob import TextBlob
+import math
+
+reddit = praw.Reddit(client_id = "F7wsA_lS5CIW_g", 
+                     client_secret = "TTqI5XAZk_ev3gQ4bPOwwQIAaVA", 
+                     user_agent = "subSentiment")
+with open("sb.txt") as f:
+    
+    day_start = 1558828801
+    day_end = 1558915199
+    
+    for line in f:
+        sub_submissions = reddit.subreddit(line.strip()).top("day")
+        
+        sub_sentiment = 0
+        num_comments = 0
+        num_pos_comments = 0
+        num_neg_comments = 0
+        max_neg_sentiment = 0
+        max_pos_sentiment = 0
+        pos_sentiment = 0
+        neg_sentiment = 0
+        
+        for submission in sub_submissions:
+            if not submission.stickied:
+                submission.comments.replace_more(limit=0)
+                for comment in submission.comments.list():
+                    blob = TextBlob(comment.body);
+                    
+                    comment_sentiment = blob.sentiment.polarity
+                    
+                    if comment_sentiment > max_pos_sentiment:
+                        max_pos_sentiment = comment_sentiment
+                    if comment_sentiment < max_neg_sentiment:
+                        max_neg_sentiment = comment_sentiment
+                        
+                    if comment_sentiment > 0:
+                        num_pos_comments += 1
+                        pos_sentiment += comment_sentiment
+                    if comment_sentiment < 0:
+                        num_neg_comments += 1
+                        neg_sentiment += comment_sentiment
+                        
+                    sub_sentiment += comment_sentiment
+                    num_comments += 1
+                    
+                    
+        print("/r/" + line)
+        try:
+            print("Ratio: " + str(math.floor(sub_sentiment/num_comments*100)))
+            print("Most +ve Sentiment: " + str(max_pos_sentiment))
+            print("Most -ve Sentiment: " + str(max_neg_sentiment))
+            print("Comments: " + str(num_comments))
+            print("+ve Comments: " + str(num_pos_comments))
+            print("-ve Comments: " + str(num_neg_comments))
+            print("+ve Sentiment Sum: " + str(pos_sentiment))
+            print("-ve Sentiment Sum: " + str(neg_sentiment))
+            print("\n")
+        except:
+            print("No comments \n")
+            ZeroDivisionError
